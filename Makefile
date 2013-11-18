@@ -16,5 +16,9 @@ bootstrap: compile
 	@ erl -pz ebin -b start_sasl -noshell -s init stop -s neotoma bootstrap
 	@ rebar compile
 
+pegerl: compile
+	@ erl -pz ebin -b start_sasl -noshell -s init stop -s neotoma bootstrap_pegerl
+	@ rebar compile
+
 escript:
 	@ rebar escriptize

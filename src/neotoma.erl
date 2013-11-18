@@ -1,6 +1,6 @@
 -module(neotoma).
 -author("Sean Cribbs <seancribbs@gmail.com>").
--export([file/1, file/2, bootstrap/0]).
+-export([file/1, file/2, bootstrap/0, bootstrap_pegerl/0]).
 -export([main/1]).
 
 -type option() :: {module, atom()} | {output, file:filename()} |  {transform_module, atom()}.
@@ -123,6 +123,12 @@ generate_transform_stub(XfFile,ModName) ->
 -spec bootstrap() -> 'ok'.
 bootstrap() ->
     file("priv/neotoma_parse.peg", [{output, "src/"}, {neotoma_priv_dir, "priv"}]).
+
+%% @doc Bootstraps the neotoma metagrammar.  Intended only for internal development!
+%% @equiv file("src/neotoma_parse.peg")
+-spec bootstrap_pegerl() -> 'ok'.
+bootstrap_pegerl() ->
+    file("priv/pegerl_parse.peg", [{output, "src/"}, {neotoma_priv_dir, "priv"}]).
 
 %% @doc Parses arguments passed to escript
 -spec parse_options(list()) -> list().
