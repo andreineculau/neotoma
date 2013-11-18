@@ -21,7 +21,7 @@ declaration_sequence <- head:declaration tail:(space declaration)*
   [FirstRule|OtherRules]
 `;
 
-declaration <- nonterminal space* '<-' space* parsing_expression space? code_block? space? ';'
+declaration <- nonterminal space* ('<-' / '=') space* parsing_expression space? code_block? space? ';'
 `
   [{nonterminal,Symbol}|Tail] = Node,
   add_lhs(Symbol, Index),

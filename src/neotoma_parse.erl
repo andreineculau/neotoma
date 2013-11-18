@@ -122,7 +122,7 @@ parse(Input) when is_binary(Input) ->
  end).
 
 'declaration'(Input, Index) ->
-  p(Input, Index, 'declaration', fun(I,D) -> (p_seq([fun 'nonterminal'/2, p_zero_or_more(fun 'space'/2), p_string(<<"<-">>), p_zero_or_more(fun 'space'/2), fun 'parsing_expression'/2, p_optional(fun 'space'/2), p_optional(fun 'code_block'/2), p_optional(fun 'space'/2), p_string(<<";">>)]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'declaration', fun(I,D) -> (p_seq([fun 'nonterminal'/2, p_zero_or_more(fun 'space'/2), p_choose([p_string(<<"<-">>), p_string(<<"=">>)]), p_zero_or_more(fun 'space'/2), fun 'parsing_expression'/2, p_optional(fun 'space'/2), p_optional(fun 'code_block'/2), p_optional(fun 'space'/2), p_string(<<";">>)]))(I,D) end, fun(Node, _Idx) ->
   [{nonterminal,Symbol}|Tail] = Node,
   add_lhs(Symbol, Index),
   Transform = case lists:nth(6,Tail) of
