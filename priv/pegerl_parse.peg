@@ -1,220 +1,101 @@
 grammar
-  = __ initializer:initializer? rules:rule+ {
-      return {
-        type:        "grammar",
-        initializer: initializer !== "" ? initializer : null,
-        rules:       rules
-      };
-    }
+  = __ initializer:initializer? rules:rule+
+;
 
 initializer
-  = code:action semicolon? {
-      return {
-        type: "initializer",
-        code: code
-      };
-    }
+  = code:action semicolon?
+;
 
 rule
-  = name:identifier displayName:string? equals expression:expression semicolon? {
-      return {
-        type:        "rule",
-        name:        name,
-        expression:  displayName !== ""
-          ? {
-              type:       "named",
-              name:       displayName,
-              expression: expression
-            }
-          : expression
-      };
-    }
+  = name:identifier displayName:string? equals expression:expression semicolon?
+;
 
 expression
   = choice
 
 choice
-  = head:sequence tail:(slash sequence)* {
-      if (tail.length > 0) {
-        var alternatives = [head].concat(utils.map(
-            tail,
-            function(element) { return element[1]; }
-        ));
-        return {
-          type:         "choice",
-          alternatives: alternatives
-        };
-      } else {
-        return head;
-      }
-    }
+  = head:sequence tail:(slash sequence)*
+;
 
 sequence
-  = elements:labeled* code:action {
-      var expression = elements.length !== 1
-        ? {
-            type:     "sequence",
-            elements: elements
-          }
-        : elements[0];
-      return {
-        type:       "action",
-        expression: expression,
-        code:       code
-      };
-    }
-  / elements:labeled* {
-      return elements.length !== 1
-        ? {
-            type:     "sequence",
-            elements: elements
-          }
-        : elements[0];
-    }
+  = elements:labeled* code:action
+  / elements:labeled*
+;
 
 labeled
-  = label:identifier colon expression:prefixed {
-      return {
-        type:       "labeled",
-        label:      label,
-        expression: expression
-      };
-    }
+  = label:identifier colon expression:prefixed
   / prefixed
+;
 
 prefixed
-  = dollar expression:suffixed {
-      return {
-        type:       "text",
-        expression: expression
-      };
-    }
-  / and code:action {
-      return {
-        type: "semantic_and",
-        code: code
-      };
-    }
-  / and expression:suffixed {
-      return {
-        type:       "simple_and",
-        expression: expression
-      };
-    }
-  / not code:action {
-      return {
-        type: "semantic_not",
-        code: code
-      };
-    }
-  / not expression:suffixed {
-      return {
-        type:       "simple_not",
-        expression: expression
-      };
-    }
+  = dollar expression:suffixed
+  / and code:action
+  / and expression:suffixed
+  / not code:action
+  / not expression:suffixed
   / suffixed
+;
 
 suffixed
-  = expression:primary question {
-      return {
-        type:       "optional",
-        expression: expression
-      };
-    }
-  / expression:primary star {
-      return {
-        type:       "zero_or_more",
-        expression: expression
-      };
-    }
-  / expression:primary plus {
-      return {
-        type:       "one_or_more",
-        expression: expression
-      };
-    }
+  = expression:primary question
+  / expression:primary star
+  / expression:primary plus
   / primary
+;
 
 primary
-  = name:identifier !(string? equals) {
-      return {
-        type: "rule_ref",
-        name: name
-      };
-    }
+  = name:identifier !(string? equals)
   / literal
   / class
-  / dot { return { type: "any" }; }
-  / lparen expression:expression rparen { return expression; }
+  / dot
+  / lparen expression:expression rparen
+;
 
-/* "Lexical" elements */
-
-action "action"
-  = braced:braced __ { return braced.substr(1, braced.length - 2); }
+action
+  = braced:braced __
+;
 
 braced
-  = $("{" (braced / nonBraceCharacters)* "}")
+  = ("{" (braced / nonBraceCharacters)* "}")
+;
 
 nonBraceCharacters
   = nonBraceCharacter+
+;
 
 nonBraceCharacter
   = [^{}]
+;
 
-equals    = "=" __ { return "="; }
-colon     = ":" __ { return ":"; }
-semicolon = ";" __ { return ";"; }
-slash     = "/" __ { return "/"; }
-and       = "&" __ { return "&"; }
-not       = "!" __ { return "!"; }
-dollar    = "$" __ { return "$"; }
-question  = "?" __ { return "?"; }
-star      = "*" __ { return "*"; }
-plus      = "+" __ { return "+"; }
-lparen    = "(" __ { return "("; }
-rparen    = ")" __ { return ")"; }
-dot       = "." __ { return "."; }
+equals    = "=" __;
+colon     = ":" __;
+semicolon = ";" __;
+slash     = "/" __;
+and       = "&" __;
+not       = "!" __;
+dollar    = "$" __;
+question  = "?" __;
+star      = "*" __;
+plus      = "+" __;
+lparen    = "(" __;
+rparen    = ")" __;
+dot       = "." __;
 
-/*
- * Modeled after ECMA-262, 5th ed., 7.6, but much simplified:
- *
- * * no Unicode escape sequences
- *
- * * "Unicode combining marks" and "Unicode connection punctuation" can't be
- *   part of the identifier
- *
- * * only [a-zA-Z] is considered a "Unicode letter"
- *
- * * only [0-9] is considered a "Unicode digit"
- *
- * The simplifications were made just to make the implementation little bit
- * easier, there is no "philosophical" reason behind them.
- *
- * Contrary to ECMA 262, the "$" character is not valid because it serves other
- * purpose in the grammar.
- */
-identifier "identifier"
-  = chars:$((letter / "_") (letter / digit / "_")*) __ { return chars; }
+identifier
+  = chars:((letter / "_") (letter / digit / "_")*) __
+;
 
-/*
- * Modeled after ECMA-262, 5th ed., 7.8.4. (syntax & semantics, rules only
- * vaguely).
- */
-literal "literal"
-  = value:(doubleQuotedString / singleQuotedString) flags:"i"? __ {
-      return {
-        type:       "literal",
-        value:      value,
-        ignoreCase: flags === "i"
-      };
-    }
+literal
+  = value:(doubleQuotedString / singleQuotedString) flags:"i"? __
+;
 
-string "string"
-  = string:(doubleQuotedString / singleQuotedString) __ { return string; }
+string
+  = string:(doubleQuotedString / singleQuotedString) __
+;
 
 doubleQuotedString
-  = '"' chars:doubleQuotedCharacter* '"' { return chars.join(""); }
+  = '"' chars:doubleQuotedCharacter* '"'
+;
 
 doubleQuotedCharacter
   = simpleDoubleQuotedCharacter
@@ -223,12 +104,15 @@ doubleQuotedCharacter
   / hexEscapeSequence
   / unicodeEscapeSequence
   / eolEscapeSequence
+;
 
 simpleDoubleQuotedCharacter
-  = !('"' / "\\" / eolChar) char_:. { return char_; }
+  = !('"' / "\\" / eolChar) char_:.
+;
 
 singleQuotedString
-  = "'" chars:singleQuotedCharacter* "'" { return chars.join(""); }
+  = "'" chars:singleQuotedCharacter* "'"
+;
 
 singleQuotedCharacter
   = simpleSingleQuotedCharacter
@@ -237,52 +121,23 @@ singleQuotedCharacter
   / hexEscapeSequence
   / unicodeEscapeSequence
   / eolEscapeSequence
+;
 
 simpleSingleQuotedCharacter
-  = !("'" / "\\" / eolChar) char_:. { return char_; }
+  = !("'" / "\\" / eolChar) char_:.
+;
 
-class "character class"
-  = "[" inverted:"^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? __ {
-      var partsConverted = utils.map(parts, function(part) { return part.data; });
-      var rawText = "["
-        + inverted
-        + utils.map(parts, function(part) { return part.rawText; }).join("")
-        + "]"
-        + flags;
-
-      return {
-        type:       "class",
-        parts:      partsConverted,
-        // FIXME: Get the raw text from the input directly.
-        rawText:    rawText,
-        inverted:   inverted === "^",
-        ignoreCase: flags === "i"
-      };
-    }
+class
+  = "[" inverted:"^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? __
+;
 
 classCharacterRange
-  = begin:classCharacter "-" end:classCharacter {
-      if (begin.data.charCodeAt(0) > end.data.charCodeAt(0)) {
-        throw new this.SyntaxError(
-          "Invalid character range: " + begin.rawText + "-" + end.rawText + "."
-        );
-      }
-
-      return {
-        data:    [begin.data, end.data],
-        // FIXME: Get the raw text from the input directly.
-        rawText: begin.rawText + "-" + end.rawText
-      };
-    }
+  = begin:classCharacter "-" end:classCharacter
+;
 
 classCharacter
-  = char_:bracketDelimitedCharacter {
-      return {
-        data:    char_,
-        // FIXME: Get the raw text from the input directly.
-        rawText: utils.quoteForRegexpClass(char_)
-      };
-    }
+  = char_:bracketDelimitedCharacter
+;
 
 bracketDelimitedCharacter
   = simpleBracketDelimitedCharacter
@@ -291,77 +146,82 @@ bracketDelimitedCharacter
   / hexEscapeSequence
   / unicodeEscapeSequence
   / eolEscapeSequence
+;
 
 simpleBracketDelimitedCharacter
-  = !("]" / "\\" / eolChar) char_:. { return char_; }
+  = !("]" / "\\" / eolChar) char_:.
+;
 
 simpleEscapeSequence
-  = "\\" !(digit / "x" / "u" / eolChar) char_:. {
-      return char_
-        .replace("b", "\b")
-        .replace("f", "\f")
-        .replace("n", "\n")
-        .replace("r", "\r")
-        .replace("t", "\t")
-        .replace("v", "\x0B"); // IE does not recognize "\v".
-    }
+  = "\\" !(digit / "x" / "u" / eolChar) char_:.
+;
 
 zeroEscapeSequence
-  = "\\0" !digit { return "\x00"; }
+  = "\\0" !digit
+;
 
 hexEscapeSequence
-  = "\\x" digits:$(hexDigit hexDigit) {
-      return String.fromCharCode(parseInt(digits, 16));
-    }
+  = "\\x" digits:(hexDigit hexDigit)
+;
 
 unicodeEscapeSequence
-  = "\\u" digits:$(hexDigit hexDigit hexDigit hexDigit) {
-      return String.fromCharCode(parseInt(digits, 16));
-    }
+  = "\\u" digits:(hexDigit hexDigit hexDigit hexDigit)
+;
 
 eolEscapeSequence
-  = "\\" eol:eol { return eol; }
+  = "\\" eol:eol
+;
 
 digit
   = [0-9]
+;
 
 hexDigit
   = [0-9a-fA-F]
+;
 
 letter
   = lowerCaseLetter
   / upperCaseLetter
+;
 
 lowerCaseLetter
   = [a-z]
+;
 
 upperCaseLetter
   = [A-Z]
+;
 
-__ = (whitespace / eol / comment)*
+__
+  = (whitespace / eol / comment)*
+;
 
-/* Modeled after ECMA-262, 5th ed., 7.4. */
-comment "comment"
+comment
   = singleLineComment
   / multiLineComment
+;
 
 singleLineComment
   = "//" (!eolChar .)*
+;
 
 multiLineComment
   = "/*" (!"*/" .)* "*/"
+;
 
-/* Modeled after ECMA-262, 5th ed., 7.3. */
-eol "end of line"
+eol
   = "\n"
   / "\r\n"
   / "\r"
   / "\u2028"
   / "\u2029"
+;
 
 eolChar
   = [\n\r\u2028\u2029]
+;
 
-/* Modeled after ECMA-262, 5th ed., 7.2. */
-whitespace "whitespace"
+whitespace
   = [ \t\v\f\u00A0\uFEFF\u1680\u180E\u2000-\u200A\u202F\u205F\u3000]
+;
