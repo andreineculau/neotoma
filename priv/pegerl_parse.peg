@@ -12,6 +12,7 @@ rule
 
 expression
   = choice
+;
 
 choice
   = head:sequence tail:(slash sequence)*
@@ -128,7 +129,7 @@ simpleSingleQuotedCharacter
 ;
 
 class
-  = "[" inverted:"^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? __
+  = "[" "^"? parts:(classCharacterRange / classCharacter)* "]" flags:"i"? __
 ;
 
 classCharacterRange
@@ -136,7 +137,7 @@ classCharacterRange
 ;
 
 classCharacter
-  = char_:bracketDelimitedCharacter
+  = bracketDelimitedCharacter
 ;
 
 bracketDelimitedCharacter
