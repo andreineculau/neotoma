@@ -175,9 +175,11 @@ white <- [ \t\n\r] ~;
 
 code_block <- ( '%{' code:('\\%' / '$%' / !'%}' .)+ '%}' ) /
               ('`' code:('\\`' / '$`' / !'`' .)+ '`') /
-              '~'
+              '~' /
+              ''
 `
    case Node of
+       <<"">> -> {code, <<"Node">>};
        <<"~">> -> {code, <<"Node">>};
        _   -> {code, proplists:get_value('code', Node)}
    end
