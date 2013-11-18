@@ -47,7 +47,7 @@ declaration <- nonterminal space* ('<-' / '=') space* parsing_expression space? 
         ")(I,D) end, fun(", TransformArgs, ") ->",Transform," end)."]
 `;
 
-parsing_expression <- choice / sequence / primary ~;
+parsing_expression <- choice / sequence / primary;
 
 choice <- head:alternative tail:(space '/' space alternative)+
 `
@@ -57,7 +57,7 @@ choice <- head:alternative tail:(space '/' space alternative)+
   ["p_choose([", Head, Statements, "])"]
 `;
 
-alternative <- sequence / labeled_primary ~;
+alternative <- sequence / labeled_primary;
 
 primary <- prefix atomic / atomic suffix / atomic
 `
@@ -101,9 +101,9 @@ suffix <- repetition_suffix / optional_suffix
   end
 `;
 
-optional_suffix <- '?' ~;
+optional_suffix <- '?';
 
-repetition_suffix <- '+' / '*' ~;
+repetition_suffix <- '+' / '*';
 
 prefix <- '&' / '!'
 `
@@ -131,7 +131,7 @@ nonterminal <- alpha_char alphanumeric_char*
   {nonterminal, Symbol}
 `;
 
-terminal <- regexp_string / quoted_string / character_class / anything_symbol ~;
+terminal <- regexp_string / quoted_string / character_class / anything_symbol;
 
 regexp_string <- '#' string:(!'#' ('\\#' / .))+ '#'
 `
@@ -150,9 +150,9 @@ quoted_string <- single_quoted_string / double_quoted_string
    "\">>)"])
 `;
 
-double_quoted_string <- '"' string:(!'"' ("\\\\" / '\\"' / .))* '"' ~;
+double_quoted_string <- '"' string:(!'"' ("\\\\" / '\\"' / .))* '"';
 
-single_quoted_string <- "'" string:(!"'" ("\\\\" / "\\'" / .))* "'" ~;
+single_quoted_string <- "'" string:(!"'" ("\\\\" / "\\'" / .))* "'";
 
 character_class <- '[' characters:(!']' ('\\\\' . / !'\\\\' .))+ ']'
 `
@@ -163,15 +163,15 @@ character_class <- '[' characters:(!']' ('\\\\' . / !'\\\\' .))+ ']'
 
 anything_symbol <- '.' ` <<"p_anything()">> `;
 
-alpha_char <- [A-Za-z_] ~;
+alpha_char <- [A-Za-z_];
 
-alphanumeric_char <- alpha_char / [0-9] ~;
+alphanumeric_char <- alpha_char / [0-9];
 
-space <- (white / comment_to_eol)+ ~;
+space <- (white / comment_to_eol)+;
 
-comment_to_eol <- !'%{' '%' (!"\n" .)* ~;
+comment_to_eol <- !'%{' '%' (!"\n" .)*;
 
-white <- [ \t\n\r] ~;
+white <- [ \t\n\r];
 
 code_block <- ( '%{' code:('\\%' / '$%' / !'%}' .)+ '%}' ) /
               ('`' code:('\\`' / '$`' / !'`' .)+ '`') /
