@@ -87,7 +87,7 @@ labeled_primary <- label? primary
   end
 `;
 
-label <- alpha_char alphanumeric_char* ':'
+label <- alpha_char ("_" / alphanumeric_char)* ':'
 `
   lists:sublist(Node, length(Node)-1)
 `;
@@ -124,7 +124,7 @@ end
 
 parenthesized_expression <- '(' space? parsing_expression space? ')' `lists:nth(3, Node)`;
 
-nonterminal <- alpha_char alphanumeric_char*
+nonterminal <- alpha_char ("_" / alphanumeric_char)*
 `
   Symbol = iolist_to_binary(Node),
   add_nt(Symbol, Idx),

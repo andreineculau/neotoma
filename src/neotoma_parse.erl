@@ -190,7 +190,7 @@ end
  end).
 
 'label'(Input, Index) ->
-  p(Input, Index, 'label', fun(I,D) -> (p_seq([fun 'alpha_char'/2, p_zero_or_more(fun 'alphanumeric_char'/2), p_string(<<":">>)]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'label', fun(I,D) -> (p_seq([fun 'alpha_char'/2, p_zero_or_more(p_choose([p_string(<<"_">>), fun 'alphanumeric_char'/2])), p_string(<<":">>)]))(I,D) end, fun(Node, _Idx) ->
   lists:sublist(Node, length(Node)-1)
  end).
 
@@ -230,7 +230,7 @@ end
   p(Input, Index, 'parenthesized_expression', fun(I,D) -> (p_seq([p_string(<<"(">>), p_optional(fun 'space'/2), fun 'parsing_expression'/2, p_optional(fun 'space'/2), p_string(<<")">>)]))(I,D) end, fun(Node, _Idx) ->lists:nth(3, Node) end).
 
 'nonterminal'(Input, Index) ->
-  p(Input, Index, 'nonterminal', fun(I,D) -> (p_seq([fun 'alpha_char'/2, p_zero_or_more(fun 'alphanumeric_char'/2)]))(I,D) end, fun(Node, Idx) ->
+  p(Input, Index, 'nonterminal', fun(I,D) -> (p_seq([fun 'alpha_char'/2, p_zero_or_more(p_choose([p_string(<<"_">>), fun 'alphanumeric_char'/2]))]))(I,D) end, fun(Node, Idx) ->
   Symbol = iolist_to_binary(Node),
   add_nt(Symbol, Idx),
   {nonterminal, Symbol}
