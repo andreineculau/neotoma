@@ -1,12 +1,16 @@
 %% Grammar and transformations
 
-rules <- space? declaration_sequence space? code_block? space?
+rules <- space? code_block? declaration_sequence space? code_block? space?
 `
   RootRule = verify_rules(),
-  Rules = iolist_to_binary(lists:map(fun(R) -> [R, "\n\n"] end, lists:nth(2, Node))),
-  Code = case lists:nth(4, Node) of
+  Rules = iolist_to_binary(lists:map(fun(R) -> [R, "\n\n"] end, lists:nth(3, Node))),
+  Code = case lists:nth(5, Node) of
              {code, Block} -> Block;
-             _ -> []
+             _ ->
+                 case lists:nth(2, Node) of
+                      {code, Block} -> Block;
+                      _ -> []
+                 end
          end,
   [{rules, Rules},
    {code, Code},

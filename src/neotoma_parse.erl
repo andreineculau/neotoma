@@ -101,12 +101,16 @@ parse(Input) when is_binary(Input) ->
   release_memo(), Result.
 
 'rules'(Input, Index) ->
-  p(Input, Index, 'rules', fun(I,D) -> (p_seq([p_optional(fun 'space'/2), fun 'declaration_sequence'/2, p_optional(fun 'space'/2), p_optional(fun 'code_block'/2), p_optional(fun 'space'/2)]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'rules', fun(I,D) -> (p_seq([p_optional(fun 'space'/2), p_optional(fun 'code_block'/2), fun 'declaration_sequence'/2, p_optional(fun 'space'/2), p_optional(fun 'code_block'/2), p_optional(fun 'space'/2)]))(I,D) end, fun(Node, _Idx) ->
   RootRule = verify_rules(),
-  Rules = iolist_to_binary(lists:map(fun(R) -> [R, "\n\n"] end, lists:nth(2, Node))),
-  Code = case lists:nth(4, Node) of
+  Rules = iolist_to_binary(lists:map(fun(R) -> [R, "\n\n"] end, lists:nth(3, Node))),
+  Code = case lists:nth(5, Node) of
              {code, Block} -> Block;
-             _ -> []
+             _ ->
+                 case lists:nth(2, Node) of
+                      {code, Block} -> Block;
+                      _ -> []
+                 end
          end,
   [{rules, Rules},
    {code, Code},
