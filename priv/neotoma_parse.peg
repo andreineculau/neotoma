@@ -59,7 +59,7 @@ choice <- head:alternative tail:(space '/' space alternative)+
 
 alternative <- sequence / labeled_primary;
 
-primary <- prefix atomic / atomic suffix / atomic
+primary <- primary_
 `
 case Node of
   [Atomic, one_or_more] -> ["p_one_or_more(", Atomic, ")"];
@@ -70,6 +70,8 @@ case Node of
   _ -> Node
 end
 `;
+
+primary_ <- prefix atomic / atomic suffix / atomic;
 
 sequence <- head:labeled_primary tail:(space labeled_primary)+
 `
@@ -92,7 +94,7 @@ label <- alpha_char ("_" / alphanumeric_char)* ':'
   lists:sublist(Node, length(Node)-1)
 `;
 
-suffix <- repetition_suffix / optional_suffix
+suffix <- suffix_
 `
   case Node of
     <<"*">> -> zero_or_more;
@@ -101,11 +103,13 @@ suffix <- repetition_suffix / optional_suffix
   end
 `;
 
+suffix_ <- repetition_suffix / optional_suffix;
+
 optional_suffix <- '?';
 
 repetition_suffix <- '+' / '*';
 
-prefix <- '&' / '!'
+prefix <- prefix_
 `
   case Node of
     <<"&">> -> assert;
@@ -113,7 +117,9 @@ prefix <- '&' / '!'
   end
 `;
 
-atomic <- terminal / nonterminal / parenthesized_expression
+prefix_ <- '&' / '!';
+
+atomic <- atomic_
 `
 case Node of
   {nonterminal, Symbol} ->
@@ -121,6 +127,8 @@ case Node of
   _ -> Node
 end
 `;
+
+atomic_ <- terminal / nonterminal / parenthesized_expression;
 
 parenthesized_expression <- '(' space? parsing_expression space? ')' `lists:nth(3, Node)`;
 
@@ -143,12 +151,14 @@ regexp_string <- '#' string:(!'#' ('\\#' / .))+ '#'
    "\">>)"]
 `;
 
-quoted_string <- single_quoted_string / double_quoted_string
+quoted_string <- quoted_string_
 `
   lists:flatten(["p_string(<<\"",
    escape_string(binary_to_list(iolist_to_binary(proplists:get_value(string, Node)))),
    "\">>)"])
 `;
+
+quoted_string_ <- single_quoted_string / double_quoted_string;
 
 double_quoted_string <- '"' string:(!'"' ("\\\\" / '\\"' / .))* '"';
 
@@ -173,9 +183,7 @@ comment_to_eol <- !'%{' '%' (!"\n" .)*;
 
 white <- [ \t\n\r];
 
-code_block <- ( '%{' code:('\\%' / '$%' / !'%}' .)+ '%}' ) /
-              ('`' code:('\\`' / '$`' / !'`' .)+ '`') /
-              ''
+code_block <- code_block_
 `
    case Node of
        <<"">> -> {code, <<"Node">>};
@@ -183,11 +191,17 @@ code_block <- ( '%{' code:('\\%' / '$%' / !'%}' .)+ '%}' ) /
    end
 `;
 
-init_block <- ( '%{' code:('\\%' / '$%' / !'%}' .)+ '%}' ) /
-              ('`' code:('\\`' / '$`' / !'`' .)+ '`')
+code_block_ <- ( '%{' code:('\\%' / '$%' / !'%}' .)+ '%}' ) /
+              ('`' code:('\\`' / '$`' / !'`' .)+ '`') /
+              '';
+
+init_block <- init_block_
 `
    {code, proplists:get_value('code', Node)}
 `;
+
+init_block_ <- ( '%{' code:('\\%' / '$%' / !'%}' .)+ '%}' ) /
+              ('`' code:('\\`' / '$`' / !'`' .)+ '`');
 
 %% Extra functions
 `

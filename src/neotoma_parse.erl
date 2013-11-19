@@ -162,7 +162,7 @@ parse(Input) when is_binary(Input) ->
   p(Input, Index, 'alternative', fun(I,D) -> (p_choose([fun 'sequence'/2, fun 'labeled_primary'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
 
 'primary'(Input, Index) ->
-  p(Input, Index, 'primary', fun(I,D) -> (p_choose([p_seq([fun 'prefix'/2, fun 'atomic'/2]), p_seq([fun 'atomic'/2, fun 'suffix'/2]), fun 'atomic'/2]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'primary', fun(I,D) -> (fun 'primary_'/2)(I,D) end, fun(Node, _Idx) ->
 case Node of
   [Atomic, one_or_more] -> ["p_one_or_more(", Atomic, ")"];
   [Atomic, zero_or_more] -> ["p_zero_or_more(", Atomic, ")"];
@@ -172,6 +172,9 @@ case Node of
   _ -> Node
 end
  end).
+
+'primary_'(Input, Index) ->
+  p(Input, Index, 'primary_', fun(I,D) -> (p_choose([p_seq([fun 'prefix'/2, fun 'atomic'/2]), p_seq([fun 'atomic'/2, fun 'suffix'/2]), fun 'atomic'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
 
 'sequence'(Input, Index) ->
   p(Input, Index, 'sequence', fun(I,D) -> (p_seq([p_label('head', fun 'labeled_primary'/2), p_label('tail', p_one_or_more(p_seq([fun 'space'/2, fun 'labeled_primary'/2])))]))(I,D) end, fun(Node, _Idx) ->
@@ -195,13 +198,16 @@ end
  end).
 
 'suffix'(Input, Index) ->
-  p(Input, Index, 'suffix', fun(I,D) -> (p_choose([fun 'repetition_suffix'/2, fun 'optional_suffix'/2]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'suffix', fun(I,D) -> (fun 'suffix_'/2)(I,D) end, fun(Node, _Idx) ->
   case Node of
     <<"*">> -> zero_or_more;
     <<"+">> -> one_or_more;
     <<"?">> -> optional
   end
  end).
+
+'suffix_'(Input, Index) ->
+  p(Input, Index, 'suffix_', fun(I,D) -> (p_choose([fun 'repetition_suffix'/2, fun 'optional_suffix'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
 
 'optional_suffix'(Input, Index) ->
   p(Input, Index, 'optional_suffix', fun(I,D) -> (p_string(<<"?">>))(I,D) end, fun(Node, _Idx) ->Node end).
@@ -210,21 +216,27 @@ end
   p(Input, Index, 'repetition_suffix', fun(I,D) -> (p_choose([p_string(<<"+">>), p_string(<<"*">>)]))(I,D) end, fun(Node, _Idx) ->Node end).
 
 'prefix'(Input, Index) ->
-  p(Input, Index, 'prefix', fun(I,D) -> (p_choose([p_string(<<"&">>), p_string(<<"!">>)]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'prefix', fun(I,D) -> (fun 'prefix_'/2)(I,D) end, fun(Node, _Idx) ->
   case Node of
     <<"&">> -> assert;
     <<"!">> -> not_
   end
  end).
 
+'prefix_'(Input, Index) ->
+  p(Input, Index, 'prefix_', fun(I,D) -> (p_choose([p_string(<<"&">>), p_string(<<"!">>)]))(I,D) end, fun(Node, _Idx) ->Node end).
+
 'atomic'(Input, Index) ->
-  p(Input, Index, 'atomic', fun(I,D) -> (p_choose([fun 'terminal'/2, fun 'nonterminal'/2, fun 'parenthesized_expression'/2]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'atomic', fun(I,D) -> (fun 'atomic_'/2)(I,D) end, fun(Node, _Idx) ->
 case Node of
   {nonterminal, Symbol} ->
                 [<<"fun '">>, Symbol, <<"'/2">>];
   _ -> Node
 end
  end).
+
+'atomic_'(Input, Index) ->
+  p(Input, Index, 'atomic_', fun(I,D) -> (p_choose([fun 'terminal'/2, fun 'nonterminal'/2, fun 'parenthesized_expression'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
 
 'parenthesized_expression'(Input, Index) ->
   p(Input, Index, 'parenthesized_expression', fun(I,D) -> (p_seq([p_string(<<"(">>), p_optional(fun 'space'/2), fun 'parsing_expression'/2, p_optional(fun 'space'/2), p_string(<<")">>)]))(I,D) end, fun(Node, _Idx) ->lists:nth(3, Node) end).
@@ -250,11 +262,14 @@ end
  end).
 
 'quoted_string'(Input, Index) ->
-  p(Input, Index, 'quoted_string', fun(I,D) -> (p_choose([fun 'single_quoted_string'/2, fun 'double_quoted_string'/2]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'quoted_string', fun(I,D) -> (fun 'quoted_string_'/2)(I,D) end, fun(Node, _Idx) ->
   lists:flatten(["p_string(<<\"",
    escape_string(binary_to_list(iolist_to_binary(proplists:get_value(string, Node)))),
    "\">>)"])
  end).
+
+'quoted_string_'(Input, Index) ->
+  p(Input, Index, 'quoted_string_', fun(I,D) -> (p_choose([fun 'single_quoted_string'/2, fun 'double_quoted_string'/2]))(I,D) end, fun(Node, _Idx) ->Node end).
 
 'double_quoted_string'(Input, Index) ->
   p(Input, Index, 'double_quoted_string', fun(I,D) -> (p_seq([p_string(<<"\"">>), p_label('string', p_zero_or_more(p_seq([p_not(p_string(<<"\"">>)), p_choose([p_string(<<"\\\\">>), p_string(<<"\\\"">>), p_anything()])]))), p_string(<<"\"">>)]))(I,D) end, fun(Node, _Idx) ->Node end).
@@ -288,17 +303,23 @@ end
   p(Input, Index, 'white', fun(I,D) -> (p_charclass(<<"[\s\t\n\r]">>))(I,D) end, fun(Node, _Idx) ->Node end).
 
 'code_block'(Input, Index) ->
-  p(Input, Index, 'code_block', fun(I,D) -> (p_choose([p_seq([p_string(<<"%{">>), p_label('code', p_one_or_more(p_choose([p_string(<<"\\%">>), p_string(<<"$%">>), p_seq([p_not(p_string(<<"%}">>)), p_anything()])]))), p_string(<<"%}">>)]), p_seq([p_string(<<"`">>), p_label('code', p_one_or_more(p_choose([p_string(<<"\\`">>), p_string(<<"$`">>), p_seq([p_not(p_string(<<"`">>)), p_anything()])]))), p_string(<<"`">>)]), p_string(<<"">>)]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'code_block', fun(I,D) -> (fun 'code_block_'/2)(I,D) end, fun(Node, _Idx) ->
    case Node of
        <<"">> -> {code, <<"Node">>};
        _   -> {code, proplists:get_value('code', Node)}
    end
  end).
 
+'code_block_'(Input, Index) ->
+  p(Input, Index, 'code_block_', fun(I,D) -> (p_choose([p_seq([p_string(<<"%{">>), p_label('code', p_one_or_more(p_choose([p_string(<<"\\%">>), p_string(<<"$%">>), p_seq([p_not(p_string(<<"%}">>)), p_anything()])]))), p_string(<<"%}">>)]), p_seq([p_string(<<"`">>), p_label('code', p_one_or_more(p_choose([p_string(<<"\\`">>), p_string(<<"$`">>), p_seq([p_not(p_string(<<"`">>)), p_anything()])]))), p_string(<<"`">>)]), p_string(<<"">>)]))(I,D) end, fun(Node, _Idx) ->Node end).
+
 'init_block'(Input, Index) ->
-  p(Input, Index, 'init_block', fun(I,D) -> (p_choose([p_seq([p_string(<<"%{">>), p_label('code', p_one_or_more(p_choose([p_string(<<"\\%">>), p_string(<<"$%">>), p_seq([p_not(p_string(<<"%}">>)), p_anything()])]))), p_string(<<"%}">>)]), p_seq([p_string(<<"`">>), p_label('code', p_one_or_more(p_choose([p_string(<<"\\`">>), p_string(<<"$`">>), p_seq([p_not(p_string(<<"`">>)), p_anything()])]))), p_string(<<"`">>)])]))(I,D) end, fun(Node, _Idx) ->
+  p(Input, Index, 'init_block', fun(I,D) -> (fun 'init_block_'/2)(I,D) end, fun(Node, _Idx) ->
    {code, proplists:get_value('code', Node)}
  end).
+
+'init_block_'(Input, Index) ->
+  p(Input, Index, 'init_block_', fun(I,D) -> (p_choose([p_seq([p_string(<<"%{">>), p_label('code', p_one_or_more(p_choose([p_string(<<"\\%">>), p_string(<<"$%">>), p_seq([p_not(p_string(<<"%}">>)), p_anything()])]))), p_string(<<"%}">>)]), p_seq([p_string(<<"`">>), p_label('code', p_one_or_more(p_choose([p_string(<<"\\`">>), p_string(<<"$`">>), p_seq([p_not(p_string(<<"`">>)), p_anything()])]))), p_string(<<"`">>)])]))(I,D) end, fun(Node, _Idx) ->Node end).
 
 
 
